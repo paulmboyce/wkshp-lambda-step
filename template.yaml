@@ -48,7 +48,7 @@ Resources:
                 Action:
                   - lambda:InvokeFunction
                 Resource:  
-                  - !Join [ ":", [!GetAtt HelloFunction.Arn, "$LATEST"]   ]
+                  - !Join [ ":", [!GetAtt HelloWorldFunction.Arn, "$LATEST"]   ]
 
  
   
@@ -64,7 +64,7 @@ Resources:
       Type: EXPRESS
       DefinitionUri: statemachine/stock_trader.asl.json
       DefinitionSubstitutions:
-        HelloFunctionArn: !GetAtt HelloFunction.Arn
+        HelloWorldFunctionArn: !GetAtt HelloWorldFunction.Arn
       Role: !GetAtt InputOutputStepFunctionRole.Arn
 #      Policies: # Find out more about SAM policy templates: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-templates.html
 
@@ -77,26 +77,42 @@ Resources:
       LogGroupName: /aws/stepfunctions/IOStepFunction
 
 
-  HelloFunction:
-    Type: AWS::Lambda::Function
+  LambdaOnFailDestinationQueue: 
+    Type: AWS::SQS::Queue
+    Properties: 
+      QueueName: "LambdaOnFailDestinationQueue"
+
+
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
     Properties:
-      FunctionName: HelloFunction
-      Handler: index.handler
+      Handler: app.lambdaHandler
+      CodeUri: hello-world/
       Role:
         Fn::GetAtt:
-          - HelloFunctionRole
+          - HelloWorldFunctionRole
           - Arn
-      Code:
-        ZipFile:
-          "exports.handler = (event, context, callback)
-          => {\n callback(null, \"Hello, \" + event.who + \"!\");\n};"
       Runtime: nodejs18.x
       Timeout: 300
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt LambdaOnFailDestinationQueue.Arn
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints: 
+        - app.ts
 
-  HelloFunctionRole:
+
+  HelloWorldFunctionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: HelloFunctionRole
+      RoleName: HelloWorldFunctionRole
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -118,6 +134,15 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: '*'
+        - PolicyName: AWSLambdaWriteToFailQueue
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource:
+                  - !GetAtt LambdaOnFailDestinationQueue.Arn
 
 
 
@@ -125,12 +150,14 @@ Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloFunctionRoleArn:
+  HelloWorldFunctionRoleArn:
     Description: "Hello Lambda Function ARN"
-    Value: !GetAtt HelloFunctionRole.Arn
-  HelloFunction:
-    Description: "Hello Lambda Function ARN"
-    Value: !GetAtt HelloFunction.Arn
+    Value: !GetAtt HelloWorldFunctionRole.Arn
+
+
+  HelloWorldFunction:
+    Description: "MHello Lambda Function AR"
+    Value: !GetAtt HelloWorldFunction.Arn
 
   IOStepFunctionArn:
     Description: "Stock Trading state machine ARN"
@@ -139,3 +166,7 @@ Outputs:
   InputOutputStepFunctionRoleArn:
     Description: "role for stock trading state machine"
     Value: !GetAtt InputOutputStepFunctionRole.Arn
+
+  LambdaOnFailDestinationQueueARN:
+    Description: "ARN for failed lambda queue"
+    Value: !GetAtt LambdaOnFailDestinationQueue.Arn
