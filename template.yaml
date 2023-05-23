@@ -6,71 +6,9 @@ Description: >
   Sample SAM Template for step-workshop-m6
   
 Resources:
-  HelloFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: HelloFunction
-      Handler: index.handler
-      Role:
-        Fn::GetAtt:
-          - HelloFunctionRole
-          - Arn
-      Code:
-        ZipFile:
-          "exports.handler = (event, context, callback)
-          => {\n callback(null, \"Hello, \" + event.who + \"!\");\n};"
-      Runtime: nodejs18.x
-      Timeout: 300
-  HelloFunctionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: HelloFunctionRole
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: '/'
-      Policies:
-        - PolicyName: AWSLambdaBasicExecutionRole
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: '*'
-  InputOutputProcessingStepFunctionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: InputOutputProcessingStepFunctionRole
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - states.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: '/'
-      Policies:
-        - PolicyName: StepFunctionIOProcessingRole
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - lambda:InvokeFunction
-                Resource:
-                  - '*'
-  StockTradingStepFunctionRole:
+
+  
+  InputOutputStepFunctionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -110,23 +48,11 @@ Resources:
                 Action:
                   - lambda:InvokeFunction
                 Resource:  
-                  - !GetAtt StockCheckerFunction.Arn
-                  - !GetAtt StockSellerFunction.Arn
-                  - !GetAtt StockBuyerFunction.Arn
-        - PolicyName: WriteTransactionTablePolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:PutItem
-                  - dynamodb:UpdateItem
-                  - dynamodb:BatchWriteItem
-                Resource:  
-                  - !GetAtt TransactionTable.Arn
+                  - !Join [ ":", [!GetAtt HelloFunction.Arn, "$LATEST"]   ]
+
  
   
-  StockTradingStateMachine:
+  IOStepFunction:
     Type: AWS::Serverless::StateMachine # More info about State Machine Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-statemachine.html
     Properties:
       Logging: 
@@ -138,19 +64,8 @@ Resources:
       Type: EXPRESS
       DefinitionUri: statemachine/stock_trader.asl.json
       DefinitionSubstitutions:
-        StockCheckerFunctionArn: !GetAtt StockCheckerFunction.Arn
-        StockSellerFunctionArn: !GetAtt StockSellerFunction.Arn
-        StockBuyerFunctionArn: !GetAtt StockBuyerFunction.Arn
-        DDBPutItem: !Sub arn:${AWS::Partition}:states:::dynamodb:putItem
-        DDBTable: !Ref TransactionTable
-      Events:
-        HourlyTradingSchedule:
-          Type: Schedule # More info about Schedule Event Source: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-statemachine-schedule.html
-          Properties:
-            Description: Schedule to run the stock trading state machine every hour
-            Enabled: False # This schedule is disabled by default to avoid incurring charges.
-            Schedule: "rate(1 hour)"
-      Role: !GetAtt StockTradingStepFunctionRole.Arn
+        HelloFunctionArn: !GetAtt HelloFunction.Arn
+      Role: !GetAtt InputOutputStepFunctionRole.Arn
 #      Policies: # Find out more about SAM policy templates: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-templates.html
 
 
@@ -158,44 +73,51 @@ Resources:
   CloudWatchLogsLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: /aws/stepfunctions/StockTradingStateMachine
-      
-  StockCheckerFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
-    Properties:
-      CodeUri: functions/stock-checker/
-      Handler: app.lambdaHandler
-      Runtime: nodejs18.x
-      Architectures:
-        - x86_64
+      RetentionInDays: 5
+      LogGroupName: /aws/stepfunctions/IOStepFunction
 
-  StockSellerFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/stock-seller/
-      Handler: app.lambdaHandler
-      Runtime: nodejs18.x
-      Architectures:
-        - x86_64
 
-  StockBuyerFunction:
-    Type: AWS::Serverless::Function
+  HelloFunction:
+    Type: AWS::Lambda::Function
     Properties:
-      CodeUri: functions/stock-buyer/
-      Handler: app.lambdaHandler
+      FunctionName: HelloFunction
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - HelloFunctionRole
+          - Arn
+      Code:
+        ZipFile:
+          "exports.handler = (event, context, callback)
+          => {\n callback(null, \"Hello, \" + event.who + \"!\");\n};"
       Runtime: nodejs18.x
-      Architectures:
-        - x86_64
+      Timeout: 300
 
-  TransactionTable:
-    Type: AWS::Serverless::SimpleTable # More info about SimpleTable Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-simpletable.html
+  HelloFunctionRole:
+    Type: AWS::IAM::Role
     Properties:
-      PrimaryKey:
-        Name: Id
-        Type: String
-      ProvisionedThroughput:
-        ReadCapacityUnits: 1
-        WriteCapacityUnits: 1
+      RoleName: HelloFunctionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: '/'
+      Policies:
+        - PolicyName: AWSLambdaBasicExecutionRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
 
 
 
@@ -203,9 +125,6 @@ Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  InputOutputProcessingStepFunctionRoleARN:
-    Description: "Explicit Role created for STEP function"
-    Value: !GetAtt InputOutputProcessingStepFunctionRole.Arn
   HelloFunctionRoleArn:
     Description: "Hello Lambda Function ARN"
     Value: !GetAtt HelloFunctionRole.Arn
@@ -213,10 +132,10 @@ Outputs:
     Description: "Hello Lambda Function ARN"
     Value: !GetAtt HelloFunction.Arn
 
-  StockTradingStateMachineArn:
+  IOStepFunctionArn:
     Description: "Stock Trading state machine ARN"
-    Value: !Ref StockTradingStateMachine
+    Value: !Ref IOStepFunction
 
-  StockTradingStepFunctionRoleArn:
+  InputOutputStepFunctionRoleArn:
     Description: "role for stock trading state machine"
-    Value: !GetAtt StockTradingStepFunctionRole.Arn
+    Value: !GetAtt InputOutputStepFunctionRole.Arn
