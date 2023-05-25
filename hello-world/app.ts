@@ -17,6 +17,9 @@ type StepFunctionEvent = {
    who: string;
 }
 export const lambdaHandler = async (event: StepFunctionEvent): Promise<APIGatewayProxyResult> => {
+    const msg = ">>>> DANG IT!!!" + event.who + " # " + Date.now();
+    console.log(msg)
+    //throw Error("OOPS")
     return {
         statusCode: 200,
         body: JSON.stringify({

@@ -1,3 +1,16 @@
+/*
+
+ To invoke lambda asyncronously, use  "InvocationType": "Event"
+ 
+ "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName":"arn...",
+                "Payload.$": "$.lambda",
+                "InvocationType": "Event"
+            },
+*/
+
 {
     "Comment": "A step functions example showing input and output processing.",
     "StartAt": "Invoke HelloFunction",
@@ -14,6 +27,12 @@
             },
             "ResultPath": "$.data.lambda",
             "Retry": [
+                {
+                   "ErrorEquals": [ "Lambda.ClientExecutionTimeoutException", "Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+                   "IntervalSeconds": 2,
+                   "MaxAttempts": 6,
+                   "BackoffRate": 2
+                },
                 {
                     "ErrorEquals": [
                         "States.TaskFailed"

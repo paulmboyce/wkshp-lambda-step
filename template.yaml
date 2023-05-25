@@ -77,10 +77,10 @@ Resources:
       LogGroupName: /aws/stepfunctions/IOStepFunction
 
 
-  LambdaOnFailDestinationQueue: 
-    Type: AWS::SQS::Queue
-    Properties: 
-      QueueName: "LambdaOnFailDestinationQueue"
+#  LambdaOnFailDestinationQueue: 
+#    Type: AWS::SQS::Queue
+#    Properties: 
+#      QueueName: "LambdaOnFailDestinationQueue"
 
 
   HelloWorldFunction:
@@ -88,17 +88,21 @@ Resources:
     Properties:
       Handler: app.lambdaHandler
       CodeUri: hello-world/
+      AutoPublishAlias: live
       Role:
         Fn::GetAtt:
           - HelloWorldFunctionRole
           - Arn
       Runtime: nodejs18.x
-      Timeout: 300
       EventInvokeConfig:
-        DestinationConfig:
-          OnFailure:
-            Type: SQS
-            Destination: !GetAtt LambdaOnFailDestinationQueue.Arn
+#        MaximumEventAgeInSeconds: 600
+        MaximumRetryAttempts: 1
+#        DestinationConfig:
+#          OnFailure:
+#            Type: SQS
+#            Destination: !GetAtt LambdaOnFailDestinationQueue.Arn
+      Timeout: 30
+      MemorySize: 128
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
@@ -107,6 +111,7 @@ Resources:
         Sourcemap: true
         EntryPoints: 
         - app.ts
+
 
 
   HelloWorldFunctionRole:
@@ -134,15 +139,15 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: '*'
-        - PolicyName: AWSLambdaWriteToFailQueue
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - sqs:SendMessage
-                Resource:
-                  - !GetAtt LambdaOnFailDestinationQueue.Arn
+        # - PolicyName: AWSLambdaWriteToFailQueue
+        #   PolicyDocument:
+        #     Version: '2012-10-17'
+        #     Statement:
+        #       - Effect: Allow
+        #         Action:
+        #           - sqs:SendMessage
+        #         Resource:
+        #           - !GetAtt LambdaOnFailDestinationQueue.Arn
 
 
 
@@ -167,6 +172,7 @@ Outputs:
     Description: "role for stock trading state machine"
     Value: !GetAtt InputOutputStepFunctionRole.Arn
 
-  LambdaOnFailDestinationQueueARN:
-    Description: "ARN for failed lambda queue"
-    Value: !GetAtt LambdaOnFailDestinationQueue.Arn
+  # LambdaOnFailDestinationQueueARN:
+  #   Description: "ARN for failed lambda queue"
+  #   Value: !GetAtt LambdaOnFailDestinationQueue.Arn
+    
