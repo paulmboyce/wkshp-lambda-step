@@ -1,0 +1,99 @@
+{
+    "Comment": "An example of the Amazon States Language using a parallel state to execute two branches at the same time.",
+    "StartAt": "Parallel",
+    "States": {
+        "Parallel": {
+            "Type": "Parallel",
+           "End": true,
+            "Branches": [
+                {
+                    "StartAt": "SumValues",
+                     "States": {
+                        "SumValues": {
+                            "Type": "Task",
+                                "Resource": "arn:aws:states:::lambda:invoke",
+                                "Parameters": {
+                                    "FunctionName":"${SumFunctionArn}",
+                                    "Payload": {
+                                        "data.$" : "$.data"
+                                    } 
+                                },
+                                "ResultSelector": {
+                                    "SUM.$": "$.Payload.sum"
+                                 },
+                                "ResultPath": "$.result",  
+                                "Retry": [
+                                    {
+                                       "ErrorEquals": [ "Lambda.ClientExecutionTimeoutException", "Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+                                       "IntervalSeconds": 2,
+                                       "MaxAttempts": 6,
+                                       "BackoffRate": 2
+                                    }
+                                ],
+                           "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "MaxMinValues",
+                    "States": {
+                        "MaxMinValues": {
+                             "Type": "Task",
+                                "Resource": "arn:aws:states:::lambda:invoke",
+                                "Parameters": {
+                                    "FunctionName":"${MaxMinFunctionArn}",
+                                    "Payload": {
+                                        "data.$" : "$.data"
+                                    } 
+                                },
+                                "ResultSelector": {
+                                    "MAX.$": "$.Payload.max",
+                                    "MIN.$": "$.Payload.min"
+                                },
+                                "ResultPath": "$.result",
+                                "OutputPath":"$.result",
+                                "Retry": [
+                                    {
+                                       "ErrorEquals": [ "Lambda.ClientExecutionTimeoutException", "Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+                                       "IntervalSeconds": 2,
+                                       "MaxAttempts": 6,
+                                       "BackoffRate": 2
+                                    }
+                                ],
+                           "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "AverageValues",
+                    "States": {
+                        "AverageValues": {
+                            "Type": "Task",
+                                "Resource": "arn:aws:states:::lambda:invoke",
+                                "Parameters": {
+                                    "FunctionName":"${AvgFunctionArn}",
+                                    "Payload": {
+                                        "data.$" : "$.data"
+                                    } 
+                                },
+                                "ResultSelector": {
+                                    "AVG.$": "$.Payload.avg"
+                                    },
+                                "ResultPath": "$.result",
+                                "OutputPath":"$.result",
+                                "Retry": [
+                                    {
+                                       "ErrorEquals": [ "Lambda.ClientExecutionTimeoutException", "Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+                                       "IntervalSeconds": 2,
+                                       "MaxAttempts": 6,
+                                       "BackoffRate": 2
+                                    }
+                                ],
+                           "End": true
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
