@@ -19,7 +19,7 @@
                                     } 
                                 },
                                 "ResultSelector": {
-                                    "SUM.$": "$.Payload.sum"
+                                    "AVG.$": "$.Payload.sum"
                                  },
                                 "ResultPath": "$.result",  
                                 "OutputPath":"$.result",
