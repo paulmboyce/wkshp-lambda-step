@@ -1,5 +1,5 @@
 {
-    "Comment": "An example of the Amazon States Language using a parallel state to execute two branches at the same time.",
+    "Comment": "A step functions workflow that executes tasks in parallel.",
     "StartAt": "Parallel",
     "States": {
         "Parallel": {
@@ -19,10 +19,8 @@
                                     } 
                                 },
                                 "ResultSelector": {
-                                    "AVG.$": "$.Payload.sum"
+                                    "sum.$": "$.Payload.sum"
                                  },
-                                "ResultPath": "$.result",  
-                                "OutputPath":"$.result",
                                 "Retry": [
                                     {
                                        "ErrorEquals": [ "Lambda.ClientExecutionTimeoutException", "Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
@@ -48,11 +46,10 @@
                                     } 
                                 },
                                 "ResultSelector": {
-                                    "MAX.$": "$.Payload.max",
-                                    "MIN.$": "$.Payload.min"
+                                    "max.$": "$.Payload.max",
+                                    "min.$": "$.Payload.min"
                                 },
-                                "ResultPath": "$.result",
-                                "OutputPath":"$.result",
+  
                                 "Retry": [
                                     {
                                        "ErrorEquals": [ "Lambda.ClientExecutionTimeoutException", "Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
@@ -78,10 +75,9 @@
                                     } 
                                 },
                                 "ResultSelector": {
-                                    "AVG.$": "$.Payload.avg"
+                                    "avg.$": "$.Payload.avg"
                                     },
-                                "ResultPath": "$.result",
-                                "OutputPath":"$.result",
+ 
                                 "Retry": [
                                     {
                                        "ErrorEquals": [ "Lambda.ClientExecutionTimeoutException", "Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
