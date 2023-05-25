@@ -22,3 +22,17 @@ Add **--invocation-type Event** to invoke async for testing DLQs
 ```
 aws lambda invoke --function-name step-workshop-m6-HelloWorldFunction-pXuQzCA1l7Ja  --cli-binary-format raw-in-base64-out --payload '{ "who": "retry ONE ASYNC DANG" }' response.json --invocation-type Event
 ```
+
+## TO INVOKE LAMBDA  ASYNCRONOUSLY IN STEP FUNCTION:
+
+```
+ // To invoke lambda asyncronously, use  "InvocationType": "Event"
+ 
+ "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName":"arn...",
+                "Payload.$": "$.lambda",
+                "InvocationType": "Event"
+            },
+```
