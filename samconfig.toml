@@ -6,5 +6,5 @@ stack_name = "step-workshop-m6"
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-l39t6jwxuor6"
 s3_prefix = "step-workshop-m6"
 region = "eu-west-1"
-capabilities = "CAPABILITY_NAMED_IAM"
+capabilities = ["CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"]
 image_repositories = []

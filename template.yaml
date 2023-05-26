@@ -7,6 +7,11 @@ Description: >
   
 Resources:
 
+  # Insert separate app from a Cfn/SAM template:
+  Module7App:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: module_7.yml
   
   InputOutputStepFunctionRole:
     Type: AWS::IAM::Role
